@@ -1,0 +1,9 @@
+[server]
+headless = true
+
+[theme]
+base = "light"            # You can still toggle Dark in the sidebar
+primaryColor = "#0079b2"
+secondaryBackgroundColor = "#f8faff"
+backgroundColor = "#ffffff"
+textColor = "#0f172a"
