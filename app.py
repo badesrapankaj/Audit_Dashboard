@@ -1,4 +1,5 @@
 import io
+import altair as alt
 from typing import Dict, List, Tuple, Optional
 
 import numpy as np
@@ -28,7 +29,6 @@ with st.sidebar:
     st.markdown("---")
     st.subheader("🎨 Appearance")
 
-    # HLF-inspired default palette
     THEMES = {
         "HLF (Hinduja Leyland)": {"primary": "#0079b2", "accent": "#312e81", "bg1": "#ffffff", "bg2": "#eef4ff"},
         "Ocean":                  {"primary": "#2563eb", "accent": "#22d3ee", "bg1": "#ffffff", "bg2": "#eef4ff"},
@@ -53,7 +53,7 @@ else:
     text, text_muted = "#0f172a", "#475569"
     card_bg, border, head_bg = "#ffffff", "#e5e7eb", "#f8fafc"
 
-# ---- inject CSS (Dark & Light: header, search bar, tables, chart fullscreen fixed) ----
+# ---- inject CSS ----
 st.markdown(
     f"""
     <style>
@@ -74,107 +74,58 @@ st.markdown(
       --btn-text: {("#e5e7eb" if is_dark else "#0f172a")};
       --hover: {"rgba(255,255,255,0.10)" if is_dark else "rgba(0,0,0,0.06)"};
     }}
-
     .stApp {{ background: linear-gradient(180deg, var(--bg1) 0%, var(--bg2) 100%); }}
     html, body, [data-testid="stAppViewContainer"] * {{ color: var(--text); }}
-
-    /* Metric cards */
     [data-testid="stMetric"] {{
       background: var(--card); border: 1px solid var(--border); border-radius: 12px;
       padding: 14px 16px; box-shadow: 0 6px 18px rgba(0,0,0,{0.35 if is_dark else 0.08});
     }}
-
-    /* Tabs: square */
     button[role="tab"] {{ border-radius: 0 !important; color: var(--text) !important; }}
     button[role="tab"][aria-selected="true"] {{ background: var(--primary) !important; color: #fff !important; }}
-
-    /* Sidebar surface */
     section[data-testid="stSidebar"] {{
       background: {("#0f172a" if is_dark else "#f8faff")}; border-right: 1px solid var(--border);
     }}
-
-    /* ---------------- HEADER / TOOLBAR (deploy & 3-dots) ---------------- */
     header[data-testid="stHeader"], div[data-testid="stToolbar"] {{
       background: {("#0b1220" if is_dark else "#ffffff")} !important;
       color: var(--text) !important;
       border-bottom: 1px solid var(--border) !important;
     }}
-    header[data-testid="stHeader"] * , div[data-testid="stToolbar"] * {{
-      color: var(--text) !important; fill: var(--text) !important;
-    }}
-
-    /* ---------------- SEARCH TEXT INPUT ---------------- */
+    header[data-testid="stHeader"] * , div[data-testid="stToolbar"] * {{ color: var(--text) !important; fill: var(--text) !important; }}
     .stTextInput > div > div, div[data-baseweb="input"] {{
-      background: var(--card) !important;
-      color: var(--text) !important;
-      border: 1px solid var(--border) !important;
+      background: var(--card) !important; color: var(--text) !important; border: 1px solid var(--border) !important;
     }}
     .stTextInput input, div[data-baseweb="input"] input {{ color: var(--text) !important; }}
-    .stTextInput input::placeholder, div[data-baseweb="input"] input::placeholder {{
-      color: var(--text-muted) !important; opacity: 1;
-    }}
-
-    /* ---------------- TABLES (st.dataframe virtualized grid) ---------------- */
+    .stTextInput input::placeholder, div[data-baseweb="input"] input::placeholder {{ color: var(--text-muted) !important; opacity: 1; }}
     [data-testid="stDataFrame"],
     [data-testid="stDataFrame"] > div,
     [data-testid="stDataFrame"] div[role="grid"],
     [data-testid="stDataFrame"] thead th,
     [data-testid="stDataFrame"] tbody td {{ background: var(--card) !important; }}
     [data-testid="stDataFrame"] thead th {{
-      text-align: center !important;
-      color: var(--text) !important;
-      border-bottom: 1px solid var(--border) !important;
+      text-align: center !important; color: var(--text) !important; border-bottom: 1px solid var(--border) !important;
     }}
-    [data-testid="stDataFrame"] tbody td div[data-testid="cell"] {{
-      justify-content: center; text-align: center; color: var(--text) !important;
-    }}
-    [data-testid="stDataFrame"] tbody td {{
-      border-bottom: 1px solid {("rgba(255,255,255,0.08)" if is_dark else "rgba(0,0,0,0.08)")} !important;
-    }}
-    /* DataFrame toolbar (fullscreen, download) */
+    [data-testid="stDataFrame"] tbody td div[data-testid="cell"] {{ justify-content: center; text-align: center; color: var(--text) !important; }}
+    [data-testid="stDataFrame"] tbody td {{ border-bottom: 1px solid {("rgba(255,255,255,0.08)" if is_dark else "rgba(0,0,0,0.08)")} !important; }}
     [data-testid="stDataFrame"] button,
     [data-testid="stDataFrame"] [role="button"] {{
-      background: var(--btn-bg) !important;
-      color: var(--btn-text) !important;
-      border: 1px solid var(--border) !important;
-      border-radius: 6px !important;
+      background: var(--btn-bg) !important; color: var(--btn-text) !important; border: 1px solid var(--border) !important; border-radius: 6px !important;
     }}
-    [data-testid="stDataFrame"] button svg,
-    [data-testid="stDataFrame"] [role="button"] svg {{
-      fill: var(--btn-text) !important; color: var(--btn-text) !important;
-    }}
-
-    /* ---------------- DOWNLOAD BUTTONS ---------------- */
     [data-testid="stDownloadButton"] > button {{
-      background: var(--primary) !important; color: #fff !important;
-      border: 1px solid var(--primary) !important; border-radius: 8px !important;
+      background: var(--primary) !important; color: #fff !important; border: 1px solid var(--primary) !important; border-radius: 8px !important;
     }}
-    [data-testid="stDownloadButton"] > button:hover {{ filter: brightness(0.95); }}
-
-    /* ---------------- FILE UPLOADER ---------------- */
     [data-testid="stFileUploader"] * {{ color: var(--text) !important; }}
-    [data-testid="stFileUploaderDropzone"] {{
-      background: var(--card) !important; border: 1px dashed var(--border) !important;
-    }}
+    [data-testid="stFileUploaderDropzone"] {{ background: var(--card) !important; border: 1px dashed var(--border) !important; }}
     [data-testid="stFileUploader"] button {{
-      background: var(--primary) !important; color: #fff !important;
-      border: 1px solid var(--primary) !important; border-radius: 8px !important;
+      background: var(--primary) !important; color: #fff !important; border: 1px solid var(--primary) !important; border-radius: 8px !important;
     }}
-
-    /* ---------------- SELECT/MULTISELECT/POPOVER ---------------- */
     label, .stSelectbox label, .stMultiSelect label {{ color: var(--text) !important; }}
     div[data-baseweb="input"] input::placeholder, textarea::placeholder {{ color: var(--text-muted) !important; opacity: 1; }}
     div[data-baseweb="select"] > div {{ color: var(--text) !important; background: var(--card) !important; border-color: var(--border) !important; }}
-
-    /* Portal dropdown (menu expansion) */
     body > div[data-baseweb="layer"] [data-baseweb="popover"],
     body > div[data-baseweb="layer"] [data-baseweb="menu"],
     body > div[data-baseweb="layer"] [role="listbox"],
     body > div[data-baseweb="layer"] ul[role="listbox"] {{
-      background: var(--popover) !important;
-      color: var(--text) !important;
-      border: 1px solid var(--border) !important;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.12) !important;
+      background: var(--popover) !important; color: var(--text) !important; border: 1px solid var(--border) !important; box-shadow: 0 10px 30px rgba(0,0,0,0.12) !important;
     }}
     body > div[data-baseweb="layer"] [role="option"],
     body > div[data-baseweb="layer"] li[role="option"] {{ color: var(--text) !important; background: transparent !important; }}
@@ -183,63 +134,43 @@ st.markdown(
     body > div[data-baseweb="layer"] li[role="option"][aria-selected="true"],
     body > div[data-baseweb="layer"] li[role="option"]:hover {{ background: var(--hover) !important; }}
     body > div[data-baseweb="layer"] [role="listbox"]::-webkit-scrollbar {{ width: 8px; height: 8px; }}
-    body > div[data-baseweb="layer"] [role="listbox"]::-webkit-scrollbar-thumb {{
-      background: {("#384152" if is_dark else "#cbd5e1")} !important; border-radius: 6px;
-    }}
-
-    /* ---------------- CHARTS (Altair/Vega-Embed) ---------------- */
+    body > div[data-baseweb="layer"] [role="listbox"]::-webkit-scrollbar-thumb {{ background: {("#384152" if is_dark else "#cbd5e1")} !important; border-radius: 6px; }}
     .vega-embed, .vega-embed canvas {{ background: var(--card) !important; }}
     .vega-embed:fullscreen, .vega-embed:-webkit-full-screen {{ background: var(--card) !important; }}
-    .vega-actions a {{
-      background: var(--btn-bg) !important; color: var(--btn-text) !important;
-      border: 1px solid var(--border) !important; border-radius: 6px !important;
+    .vega-actions a {{ background: var(--btn-bg) !important; color: var(--btn-text) !important; border: 1px solid var(--border) !important; border-radius: 6px !important; }}
+    .vega-tooltip {{ background: var(--card) !important; color: var(--text) !important; border: 1px solid var(--border) !important; }}
+    [data-testid="stAppViewContainer"] h2, [data-testid="stAppViewContainer"] h3, [data-testid="stAppViewContainer"] h4 {{ position: relative; }}
+    [data-testid="stAppViewContainer"] h2::after, [data-testid="stAppViewContainer"] h3::after, [data-testid="stAppViewContainer"] h4::after {{
+      content: ""; position: absolute; left: 0; bottom: -6px; height: 2px; width: 60px; background: var(--accent); border-radius: 1px;
     }}
-    .vega-tooltip {{
-      background: var(--card) !important; color: var(--text) !important; border: 1px solid var(--border) !important;
-    }}
-
-    /* Headings underline only in MAIN (none in sidebar) */
-    [data-testid="stAppViewContainer"] h2,
-    [data-testid="stAppViewContainer"] h3,
-    [data-testid="stAppViewContainer"] h4 {{ position: relative; }}
-    [data-testid="stAppViewContainer"] h2::after,
-    [data-testid="stAppViewContainer"] h3::after,
-    [data-testid="stAppViewContainer"] h4::after {{
-      content: ""; position: absolute; left: 0; bottom: -6px; height: 2px; width: 60px;
-      background: var(--accent); border-radius: 1px;
-    }}
-    section[data-testid="stSidebar"] h2::after,
-    section[data-testid="stSidebar"] h3::after,
-    section[data-testid="stSidebar"] h4::after {{ content: none; }}
+    section[data-testid="stSidebar"] h2::after, section[data-testid="stSidebar"] h3::after, section[data-testid="stSidebar"] h4::after {{ content: none; }}
     </style>
     """,
     unsafe_allow_html=True,
 )
 
 # =============================================================================
-# Altair Theme (dark-friendly & correct fullscreen)
+# Altair Theme
 # =============================================================================
-def _finova_altair_theme():
+# --- Altair Theme (RISE) ---
+import altair as alt
+@alt.theme.register("rise", enable=True)
+def rise_theme():
     grid_col = "#334155" if is_dark else "#e5e7eb"
     chart_bg = "transparent" if is_dark else "#ffffff"
-
-    return {
+    return alt.theme.ThemeConfig({
         "config": {
             "background": chart_bg,
             "view": {"stroke": "transparent"},
             "axis": {
-                "labelFont": "Poppins",
-                "titleFont": "Poppins",
-                "grid": True,
-                "domain": False,
-                "gridColor": grid_col,
-                "tickColor": grid_col,
+                "labelFont": "Poppins", "titleFont": "Poppins",
+                "grid": True, "domain": False,
+                "gridColor": grid_col, "tickColor": grid_col,
                 "labelColor": "#e5e7eb" if is_dark else "#111827",
                 "titleColor": "#e5e7eb" if is_dark else "#111827",
             },
             "legend": {
-                "labelFont": "Poppins",
-                "titleFont": "Poppins",
+                "labelFont": "Poppins", "titleFont": "Poppins",
                 "labelColor": "#e5e7eb" if is_dark else "#111827",
                 "titleColor": "#e5e7eb" if is_dark else "#111827",
             },
@@ -252,10 +183,9 @@ def _finova_altair_theme():
                 ]
             },
         }
-    }
+    })
 
-alt.themes.register("finova", _finova_altair_theme)
-alt.themes.enable("finova")
+
 
 # =============================================================================
 # Data helpers
@@ -267,41 +197,36 @@ EXPECTED_SHEETS = {
     "prs_assessment": ["prs assessment", "pvr assessment"],
 }
 
+# Canonical column names (UPPER)
 BASE_COLS_CANONICAL = [
-    "Name Of Auditor",
-    "Contract number",
-    "Contract Date",
-    "State",
-    "Hub",
-    "Location",
-    "Customer Name",
-    "Customer code",
-    "Loan type",
-    "Finance amount",
-    "Error",
-    "Query",
+    "QUARTER",
+    "NAME OF AUDITOR",
+    "CONTRACT NUMBER",
+    "CONTRACT DATE",
+    "STATE",
+    "HUB",
+    "LOCATION",
+    "CUSTOMER NAME",
+    "CUSTOMER CODE",
+    "LOAN TYPE",
+    "FINANCE AMOUNT",
+    "ERROR",
+    "QUERY",
 ]
 
-def canonize_col(col: str) -> str:
-    c = (col or "").replace("\n", " ").strip()
-    while "  " in c:
-        c = c.replace("  ", " ")
-    fixes = {"State": "State", "State ": "State", "Finance amount": "Finance amount"}
-    return fixes.get(c, c)
+def _norm_header(s: str) -> str:
+    return " ".join(str(s or "").split()).upper()
 
 def normalize_df(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
-    df.columns = [canonize_col(c) for c in df.columns]
+    df.columns = [_norm_header(c) for c in df.columns]
     for base in BASE_COLS_CANONICAL:
         if base not in df.columns:
-            if base == "State" and "State " in df.columns:
-                df.rename(columns={"State ": "State"}, inplace=True)
-            else:
-                df[base] = np.nan
-    if "Contract Date" in df.columns:
-        df["Contract Date"] = pd.to_datetime(df["Contract Date"], errors="coerce")
-    if "Finance amount" in df.columns:
-        df["Finance amount"] = pd.to_numeric(df["Finance amount"], errors="coerce")
+            df[base] = np.nan
+    if "CONTRACT DATE" in df.columns:
+        df["CONTRACT DATE"] = pd.to_datetime(df["CONTRACT DATE"], errors="coerce")
+    if "FINANCE AMOUNT" in df.columns:
+        df["FINANCE AMOUNT"] = pd.to_numeric(df["FINANCE AMOUNT"], errors="coerce")
     return df
 
 def sheet_key_match(sheet_names: List[str]) -> Dict[str, str]:
@@ -327,7 +252,6 @@ def melt_long(df: pd.DataFrame, sheet_label: str) -> pd.DataFrame:
     issue_cols = [c for c in df.columns if c not in base_set]
     if not issue_cols:
         return pd.DataFrame(columns=["Sheet","Issue","Value","is_issue",*BASE_COLS_CANONICAL])
-
     long_df = df.melt(
         id_vars=[c for c in BASE_COLS_CANONICAL if c in df.columns],
         value_vars=issue_cols,
@@ -335,28 +259,35 @@ def melt_long(df: pd.DataFrame, sheet_label: str) -> pd.DataFrame:
         value_name="Value",
     )
     def compute_is_issue(x):
-        if pd.isna(x):
-            return False
+        if pd.isna(x): return False
         s = str(x).strip()
         return bool(s) and (s.casefold() != "no query".casefold())
-
     long_df["is_issue"] = long_df["Value"].apply(compute_is_issue)
     long_df["Sheet"] = sheet_label
     return long_df
 
 @st.cache_data(show_spinner=False)
-def load_excel(uploaded_bytes: bytes, header_row: int = 3) -> Tuple[Dict[str, pd.DataFrame], Dict[str, str]]:
+def load_excel(uploaded_bytes: bytes, header_row: int = 3) -> Tuple[Dict[str, pd.DataFrame], Dict[str, str], Dict[str, list]]:
     excel = pd.ExcelFile(io.BytesIO(uploaded_bytes))
     key_to_actual = sheet_key_match(excel.sheet_names)
+
     sheets: Dict[str, pd.DataFrame] = {}
+    missing_map: Dict[str, list] = {}
+
     for key, actual in key_to_actual.items():
         try:
-            df = pd.read_excel(excel, sheet_name=actual, header=header_row, dtype=str)
+            df_raw = pd.read_excel(excel, sheet_name=actual, header=header_row, dtype=str)
         except Exception:
-            df = pd.read_excel(excel, sheet_name=actual, header=header_row)
-        df = normalize_df(df)
+            df_raw = pd.read_excel(excel, sheet_name=actual, header=header_row)
+
+        tmp_cols = {_norm_header(c) for c in df_raw.columns}
+        missing_required = [c for c in BASE_COLS_CANONICAL if c not in tmp_cols]
+
+        df = normalize_df(df_raw)
         sheets[key] = df
-    return sheets, key_to_actual
+        missing_map[key] = missing_required
+
+    return sheets, key_to_actual, missing_map
 
 def multi_select_or_all(label: str, series: pd.Series):
     vals = [v for v in sorted(series.dropna().astype(str).unique()) if v != "nan"]
@@ -371,44 +302,54 @@ def render_download_button(df: pd.DataFrame, label: str, filename: str):
 def _prepend_total_and_srno(
     df: pd.DataFrame,
     label_col: Optional[str] = None,
-    avg_spec: Optional[Tuple[str, str, str]] = None,   # (num_col, denom_col, target_col)
+    avg_spec: Optional[Tuple[str, str, str]] = None,
 ) -> pd.DataFrame:
     if df is None or df.empty:
         out = df.copy()
         out.insert(0, "Sr. No.", [])
         return out
+
     df2 = df.copy()
     num_cols = [c for c in df2.columns if pd.api.types.is_numeric_dtype(df2[c])]
     total_row = {c: df2[c].sum() if c in num_cols else "" for c in df2.columns}
+
     if avg_spec:
         num_col, denom_col, target_col = avg_spec
         if num_col in df2.columns and denom_col in df2.columns and target_col in df2.columns:
             denom_sum = df2[denom_col].sum()
             num_sum = df2[num_col].sum()
             total_row[target_col] = round(num_sum / denom_sum, 2) if denom_sum else 0.0
+
     if label_col and label_col in df2.columns:
         total_row[label_col] = "TOTAL"
+
     df_with_total = pd.concat([pd.DataFrame([total_row]), df2], ignore_index=True)
-    sr = ["—"] + list(range(1, len(df2) + 1))
+
+    # Make Sr. No. a pure string column to satisfy Arrow
+    sr = ["—"] + [str(i) for i in range(1, len(df2) + 1)]
     df_with_total.insert(0, "Sr. No.", sr)
+    df_with_total["Sr. No."] = df_with_total["Sr. No."].astype(str)
     return df_with_total
+
 
 def show_table(
     df: pd.DataFrame,
     label_col: Optional[str],
     download_name: str,
     avg_spec: Optional[Tuple[str, str, str]] = None,
-    total_overrides: Optional[Dict[str, object]] = None,  # NEW: override TOTAL row values for specific cols
+    total_overrides: Optional[Dict[str, object]] = None,
 ):
     table = _prepend_total_and_srno(df, label_col=label_col, avg_spec=avg_spec)
     if total_overrides and len(table) > 0:
         for col, val in total_overrides.items():
             if col in table.columns:
                 table.loc[0, col] = val
+    if "Sr. No." in table.columns:
+        table["Sr. No."] = table["Sr. No."].astype(str)     
     st.dataframe(table, use_container_width=True, hide_index=True)
     render_download_button(table, f"Download {download_name}", download_name)
 
-# ----- Charts (square bars; strong trend line) -----
+# ----- Charts -----
 def chart_bar(df: pd.DataFrame, x: str, y: str, color: Optional[str] = None, title: Optional[str] = None, limit: int = 40):
     if df is None or df.empty:
         return
@@ -416,7 +357,7 @@ def chart_bar(df: pd.DataFrame, x: str, y: str, color: Optional[str] = None, tit
     enc_color = alt.Color(color, legend=alt.Legend(title=color)) if color else alt.value(primary)
     chart = (
         alt.Chart(data)
-        .mark_bar()  # square bars
+        .mark_bar()
         .encode(
             x=alt.X(x, sort="-y", title=x),
             y=alt.Y(y, title=y),
@@ -463,7 +404,7 @@ if not uploaded:
     st.stop()
 
 with st.spinner("Reading workbook…"):
-    sheets_map, names_map = load_excel(uploaded.getvalue(), header_row=int(header_row))
+    sheets_map, names_map, missing_map = load_excel(uploaded.getvalue(), header_row=int(header_row))
 
 if not sheets_map:
     st.error("Could not find expected sheets. Ensure the workbook contains: Policy Norms, PD FI TVR-HCA, KYC and Loan Kit, PRS/PVR Assessment.")
@@ -473,6 +414,23 @@ with st.sidebar:
     st.subheader("Detected Sheets")
     for logical, actual in names_map.items():
         st.write(f"• **{logical}** → _{actual}_")
+
+with st.sidebar:
+    st.markdown("---")
+    st.subheader("Required columns check")
+    strict_mode = st.checkbox("Strict mode (stop on missing)", value=True)
+    any_missing = False
+    for k, actual in names_map.items():
+        miss = missing_map.get(k, [])
+        if miss:
+            any_missing = True
+            st.error(f"{actual}: missing {len(miss)} base column(s)")
+            with st.expander(f"View missing in {actual}", expanded=False):
+                st.write(", ".join(miss))
+        else:
+            st.success(f"{actual}: all base columns present")
+    if strict_mode and any_missing:
+        st.stop()
 
 with st.sidebar:
     st.markdown("---")
@@ -497,14 +455,15 @@ with st.sidebar:
     st.markdown("---")
     st.subheader("Filters")
 
-    hubs = multi_select_or_all("Hub", long_all.get("Hub", pd.Series(dtype=str)))
-    states = multi_select_or_all("State", long_all.get("State", pd.Series(dtype=str)))
-    locations = multi_select_or_all("Location", long_all.get("Location", pd.Series(dtype=str)))
-    loan_types = multi_select_or_all("Loan type", long_all.get("Loan type", pd.Series(dtype=str)))
-    auditors = multi_select_or_all("Name Of Auditor", long_all.get("Name Of Auditor", pd.Series(dtype=str)))
+    quarters = multi_select_or_all("Quarter", long_all.get("QUARTER", pd.Series(dtype=str)))
+    hubs = multi_select_or_all("Hub", long_all.get("HUB", pd.Series(dtype=str)))
+    states = multi_select_or_all("State", long_all.get("STATE", pd.Series(dtype=str)))
+    locations = multi_select_or_all("Location", long_all.get("LOCATION", pd.Series(dtype=str)))
+    loan_types = multi_select_or_all("Loan type", long_all.get("LOAN TYPE", pd.Series(dtype=str)))
+    auditors = multi_select_or_all("Name Of Auditor", long_all.get("NAME OF AUDITOR", pd.Series(dtype=str)))
 
-    min_date = pd.to_datetime(long_all["Contract Date"], errors="coerce").min()
-    max_date = pd.to_datetime(long_all["Contract Date"], errors="coerce").max()
+    min_date = pd.to_datetime(long_all["CONTRACT DATE"], errors="coerce").min()
+    max_date = pd.to_datetime(long_all["CONTRACT DATE"], errors="coerce").max()
     if pd.isna(min_date) or pd.isna(max_date):
         date_range = None
         st.caption("No valid Contract Date found to filter by date.")
@@ -521,41 +480,43 @@ with st.sidebar:
 
 # Apply filters
 flt = long_all.copy()
+if quarters:
+    flt = flt[flt["QUARTER"].astype(str).isin(quarters)]
 if hubs:
-    flt = flt[flt["Hub"].astype(str).isin(hubs)]
+    flt = flt[flt["HUB"].astype(str).isin(hubs)]
 if states:
-    flt = flt[flt["State"].astype(str).isin(states)]
+    flt = flt[flt["STATE"].astype(str).isin(states)]
 if locations:
-    flt = flt[flt["Location"].astype(str).isin(locations)]
+    flt = flt[flt["LOCATION"].astype(str).isin(locations)]
 if loan_types:
-    flt = flt[flt["Loan type"].astype(str).isin(loan_types)]
+    flt = flt[flt["LOAN TYPE"].astype(str).isin(loan_types)]
 if auditors:
-    flt = flt[flt["Name Of Auditor"].astype(str).isin(auditors)]
+    flt = flt[flt["NAME OF AUDITOR"].astype(str).isin(auditors)]
 if date_range:
     start = pd.to_datetime(date_range[0])
     end = pd.to_datetime(date_range[1]) + pd.Timedelta(days=1) - pd.Timedelta(microseconds=1)
     flt = flt[
-        (pd.to_datetime(flt["Contract Date"], errors="coerce") >= start) &
-        (pd.to_datetime(flt["Contract Date"], errors="coerce") <= end)
+        (pd.to_datetime(flt["CONTRACT DATE"], errors="coerce") >= start) &
+        (pd.to_datetime(flt["CONTRACT DATE"], errors="coerce") <= end)
     ]
 if query_text:
     q = query_text.casefold()
     flt = flt[
-        (flt["Contract number"].astype(str).str.casefold().str.contains(q, na=False)) |
-        (flt["Customer code"].astype(str).str.casefold().str.contains(q, na=False))
+        (flt["CONTRACT NUMBER"].astype(str).str.casefold().str.contains(q, na=False)) |
+        (flt["CUSTOMER CODE"].astype(str).str.casefold().str.contains(q, na=False))
     ]
 
 # =============================================================================
 # KPI Summary (customer-centric)
 # =============================================================================
-flt_codes = flt["Customer code"].dropna().astype(str)
+flt_codes = flt["CUSTOMER CODE"].dropna().astype(str)
 unique_customers = int(flt_codes.nunique())
 total_issue_cells = int(flt.loc[flt["is_issue"]].shape[0])
 issues_per_customer = (
     flt.loc[flt["is_issue"]]
-    .dropna(subset=["Customer code"])
-    .assign(**{"Customer code": lambda d: d["Customer code"].astype(str)})
-    .groupby("Customer code")
+    .dropna(subset=["CUSTOMER CODE"])
+    .assign(**{"CUSTOMER CODE": lambda d: d["CUSTOMER CODE"].astype(str)})
+    .groupby("CUSTOMER CODE")
     .size()
 )
 customers_gt1 = int((issues_per_customer > 1).sum())
@@ -575,15 +536,16 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 ])
 
 group_options = {
-    "Hub Name": "Hub",
-    "Product (Loan type)": "Loan type",
-    "State": "State",
-    "Location": "Location",
-    "Auditor": "Name Of Auditor",
+    "Quarter": "QUARTER",
+    "Hub Name": "HUB",
+    "Product (Loan type)": "LOAN TYPE",
+    "State": "STATE",
+    "Location": "LOCATION",
+    "Auditor": "NAME OF AUDITOR",
     "Sheet": "Sheet",
 }
 
-# -------------------- Tab 1: Issue Counts (overall) --------------------
+# -------------------- Tab 1 --------------------
 with tab1:
     st.subheader("Issue counts (cells ≠ 'No Query')")
     counts_issue = (
@@ -595,13 +557,11 @@ with tab1:
         .reset_index(drop=True)
     )
 
-    # NEW: add file metrics per Issue (denominator is global unique customers after filters)
     counts_issue["Unique Files Assessed"] = unique_customers
     counts_issue["Avg Issues per File"] = (
         counts_issue["Count"] / counts_issue["Unique Files Assessed"].replace(0, np.nan)
     ).fillna(0).round(2)
 
-    # TOTAL row should show true global Unique Files and global Avg
     show_table(
         counts_issue,
         label_col="Issue",
@@ -615,11 +575,10 @@ with tab1:
     st.markdown("#### Top issues (bar)")
     chart_bar(counts_issue, x="Issue", y="Count", color="Issue", title="Top Issues (current filters)", limit=30)
 
-    # Heatmap: Hub x Top 12 Issues (with in-cell count + file metrics)
     st.markdown("#### Heatmap — Top issues by Hub")
     hub_issue = (
         flt.loc[flt["is_issue"]]
-        .groupby(["Hub","Issue"], dropna=False)
+        .groupby(["HUB","Issue"], dropna=False)
         .size()
         .reset_index(name="Count")
     )
@@ -627,62 +586,49 @@ with tab1:
     heat_df = hub_issue[hub_issue["Issue"].isin(top_issues)].copy()
 
     if not heat_df.empty:
-        # Unique files per Hub (denominator for averages)
         uniq_by_hub = (
-            flt.groupby("Hub")["Customer code"]
+            flt.groupby("HUB")["CUSTOMER CODE"]
             .apply(lambda s: s.dropna().astype(str).nunique())
             .reset_index(name="Unique Files Assessed")
         )
-        heat_df = heat_df.merge(uniq_by_hub, on="Hub", how="left")
+        heat_df = heat_df.merge(uniq_by_hub, on="HUB", how="left")
         heat_df["Avg Issues per File"] = (
             heat_df["Count"] / heat_df["Unique Files Assessed"].replace(0, np.nan)
         ).fillna(0).round(2)
 
         base = alt.Chart(heat_df)
         rect = base.mark_rect().encode(
-            x=alt.X("Hub:N", title="Hub"),
+            x=alt.X("HUB:N", title="Hub"),
             y=alt.Y("Issue:N", title="Issue"),
             color=alt.Color("Count:Q", scale=alt.Scale(scheme="reds"), title="Issue Count"),
-            tooltip=["Hub","Issue","Count","Unique Files Assessed","Avg Issues per File"]
+            tooltip=["HUB","Issue","Count","Unique Files Assessed","Avg Issues per File"]
         )
-        # Count label inside each cell
         txt_color = "#000000" if not is_dark else "#ffffff"
         text_lbl = base.mark_text(baseline="middle", fontSize=11, color=txt_color).encode(
-            x="Hub:N", y="Issue:N", text="Count:Q"
+            x="HUB:N", y="Issue:N", text="Count:Q"
         )
         st.altair_chart(rect + text_lbl, use_container_width=True)
 
-        # Second heatmap: Avg issues per file (Hub × Issue)
         st.markdown("#### Heatmap — Avg issues per file (Hub × Issue)")
         avg_rect = (
             alt.Chart(heat_df)
             .mark_rect()
             .encode(
-                x=alt.X("Hub:N", title="Hub"),
+                x=alt.X("HUB:N", title="Hub"),
                 y=alt.Y("Issue:N", title="Issue"),
-                color=alt.Color(
-                    "Avg Issues per File:Q",
-                    scale=alt.Scale(scheme="blues"),
-                    title="Avg Issues / File",
-                ),
-                tooltip=["Hub","Issue","Count","Unique Files Assessed","Avg Issues per File"],
+                color=alt.Color("Avg Issues per File:Q", scale=alt.Scale(scheme="blues"), title="Avg Issues / File"),
+                tooltip=["HUB","Issue","Count","Unique Files Assessed","Avg Issues per File"],
             )
             .properties(height=420)
         )
         avg_text = (
             alt.Chart(heat_df)
             .mark_text(baseline="middle", fontSize=11, color=txt_color)
-            .encode(
-                x="Hub:N",
-                y="Issue:N",
-                text=alt.Text("Avg Issues per File:Q", format=".2f"),
-            )
+            .encode(x="HUB:N", y="Issue:N", text=alt.Text("Avg Issues per File:Q", format=".2f"))
         )
         st.altair_chart(avg_rect + avg_text, use_container_width=True)
 
-        
-
-# -------------------- Tab 2: Summary (dynamic groupable) --------------------
+# -------------------- Tab 2 --------------------
 with tab2:
     st.subheader("Summary by chosen dimension")
     col_g1, col_g2 = st.columns(2)
@@ -702,7 +648,7 @@ with tab2:
         group_fields = [group_col]
 
     uniq = (
-        tmp.groupby(group_fields, dropna=False)["Customer code"]
+        tmp.groupby(group_fields, dropna=False)["CUSTOMER CODE"]
         .apply(lambda s: s.dropna().astype(str).nunique())
         .rename("Count of Unique Cust Code")
     )
@@ -745,7 +691,7 @@ with tab2:
     else:
         chart_bar(summary, x=group_label, y="Count of Errors", color=group_label, title=f"Errors by {group_label}")
 
-# -------------------- Tab 3: Major Issue Distribution --------------------
+# -------------------- Tab 3 --------------------
 with tab3:
     st.subheader("Distribution of a Major Issue")
     major_issues = (
@@ -756,7 +702,7 @@ with tab3:
         st.info("No issues found under current filters.")
     else:
         sel_issue = st.selectbox("Select an issue", options=major_issues)
-        dist_dim_label = st.radio("Group by", options=["Hub Name", "Product (Loan type)", "State", "Location", "Sheet"], horizontal=True)
+        dist_dim_label = st.radio("Group by", options=["Quarter","Hub Name","Product (Loan type)","State","Location","Sheet"], horizontal=True)
         dist_dim = group_options[dist_dim_label]
 
         dist_df = (
@@ -769,10 +715,9 @@ with tab3:
             .reset_index(drop=True)
         )
 
-        # NEW: add per-group unique files and avg
         uniq_by_group = (
             flt.assign(**{dist_dim: flt[dist_dim].fillna("Unknown")})
-               .groupby(dist_dim)["Customer code"]
+               .groupby(dist_dim)["CUSTOMER CODE"]
                .apply(lambda s: s.dropna().astype(str).nunique())
                .reset_index(name="Unique Files Assessed")
         )
@@ -795,21 +740,19 @@ with tab3:
         st.markdown("##### Donut view")
         chart_donut(dist_df, category=dist_dim, value="Count", title=f"{sel_issue} — Share by {dist_dim_label}")
 
-# -------------------- Tab 4: Trend over time --------------------
+# -------------------- Tab 4 --------------------
 with tab4:
     st.subheader("Monthly trend of issues")
-    if "Contract Date" in flt.columns:
+    if "CONTRACT DATE" in flt.columns:
         tmp_all = flt.copy()
-        tmp_all["Month"] = pd.to_datetime(tmp_all["Contract Date"], errors="coerce").dt.to_period("M").dt.to_timestamp()
+        tmp_all["Month"] = pd.to_datetime(tmp_all["CONTRACT DATE"], errors="coerce").dt.to_period("M").dt.to_timestamp()
         tmp_all = tmp_all.dropna(subset=["Month"])
 
-        # Unique files per month (denominator)
         unique_files_by_month = (
-            tmp_all.groupby("Month")["Customer code"]
+            tmp_all.groupby("Month")["CUSTOMER CODE"]
             .apply(lambda s: s.dropna().astype(str).nunique())
             .rename("Unique Files Assessed")
         )
-        # Issue count per month
         issues_by_month = (
             tmp_all.loc[tmp_all["is_issue"]]
             .groupby("Month").size()
@@ -832,7 +775,6 @@ with tab4:
         )
 
         if len(trend_df) >= 2:
-            # Visible issue-count line
             line = (
                 alt.Chart(trend_df)
                 .mark_line(strokeWidth=3, color=primary)
@@ -850,7 +792,6 @@ with tab4:
             )
             st.altair_chart(line + pts, use_container_width=True)
 
-            # Secondary bar: unique files per month
             bars = (
                 alt.Chart(trend_df)
                 .mark_bar()
@@ -870,7 +811,7 @@ with tab4:
     else:
         st.info("No Contract Date available to compute a trend.")
 
-# -------------------- Tab 5: Data & Exports --------------------
+# -------------------- Tab 5 --------------------
 with tab5:
     st.subheader("Filtered long-format data")
     preview_cols = ["Sheet","Issue","Value","is_issue"] + [c for c in BASE_COLS_CANONICAL if c in flt.columns]
